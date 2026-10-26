@@ -640,11 +640,17 @@ class SimulationTestEngine:
             cfg.motion_speed_x = std.motion_speed_x
             cfg.motion_speed_y = std.motion_speed_y
             cfg.motion_rot_speed = std.motion_rot_speed
+            # 先确定随机种子，再用独立的 RNG 采样角度/位移：
+            # 用全局 random 会让同一随机种子下的批量结果每次都不同，
+            # 破坏"固定种子可复现"的考核前提
+            if cfg.random_seed is None:
+                cfg.random_seed = base_id * 10000 + i
+            rng = random.Random(cfg.random_seed)
             if random_mode == "all":
                 # 位置与角度同时在考核范围内随机
-                cfg.offset_x = random.uniform(*cfg.offset_x_range)
-                cfg.offset_y = random.uniform(*cfg.offset_y_range)
-                cfg.angle = random.uniform(*cfg.angle_range)
+                cfg.offset_x = rng.uniform(*cfg.offset_x_range)
+                cfg.offset_y = rng.uniform(*cfg.offset_y_range)
+                cfg.angle = rng.uniform(*cfg.angle_range)
             elif random_mode == "angle_only":
                 # 标准光源、标准位置，仅角度在考核范围内随机
                 cfg.offset_x = 0.0
@@ -652,15 +658,13 @@ class SimulationTestEngine:
                 ar = cfg.angle_range
                 if not ar or ar[0] >= ar[1]:
                     ar = (-5.0, 5.0)
-                cfg.angle = random.uniform(*ar)
+                cfg.angle = rng.uniform(*ar)
             elif random_mode == "position_only":
                 # 标准光源、零角度，仅位置在考核范围内随机
                 cfg.angle = 0.0
-                cfg.offset_x = random.uniform(*cfg.offset_x_range)
-                cfg.offset_y = random.uniform(*cfg.offset_y_range)
+                cfg.offset_x = rng.uniform(*cfg.offset_x_range)
+                cfg.offset_y = rng.uniform(*cfg.offset_y_range)
             # "fixed"：保持预设静态角度/位移（环境参数仍锁定标准）
-            if cfg.random_seed is None:
-                cfg.random_seed = base_id * 10000 + i
             gen = SceneGenerator(cfg)
             frame, truth = gen.generate_frame()
 

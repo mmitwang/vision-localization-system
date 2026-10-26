@@ -223,7 +223,7 @@ def build_glue_wb(samples, min_coverage_pct=95.0, meta=None) -> Workbook:
         f"逐区估读上胶覆盖率(%)；任一检测区覆盖率<{min_coverage_pct}% 或存在可见漏胶斑点即判定不合格。"
     )
     reference_line = (
-        f"参考参数：合格判定 单区覆盖率≥{min_coverage_pct}% 且无可见漏胶 ｜ "
+        f"参考参数：考核指标 单区覆盖率≥{min_coverage_pct}% 且无可见漏胶 ｜ "
         "检测分区 5 区/件 ｜ 抽样数量 30 件 ｜ 覆盖率估读精度 ±1%"
     )
     record_line = (
@@ -273,7 +273,7 @@ def build_fold_wb(samples, standard_mm=15.5, tolerance_mm=0.15, meta=None) -> Wo
         f"包边尺寸稳定、满足精度要求，工艺能力满足批量生产。"
     )
     reference_line = (
-        f"参考参数：标准值 {standard_mm} mm ｜ 工艺偏差目标 ±{tolerance_mm} mm ｜ "
+        f"参考参数：考核指标 包边宽度 {standard_mm} mm ± {tolerance_mm} mm ｜ "
         f"合格精度 ±{tolerance_mm} mm ｜ 测量点数 3 点/件 ｜ 抽样数量 30 件"
     )
     record_line = (

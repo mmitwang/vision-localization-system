@@ -1,0 +1,617 @@
+{
+  "generated_at": "2026-10-26 11:59:45",
+  "total": 74,
+  "passed": 74,
+  "failed": 0,
+  "pass_rate_pct": 100.0,
+  "groups": [
+    "上胶",
+    "仿真",
+    "包边",
+    "坐标",
+    "引擎",
+    "性能",
+    "机械手",
+    "标定",
+    "模板",
+    "直线",
+    "端到端",
+    "轮廓",
+    "集成",
+    "验收表"
+  ],
+  "cases": [
+    {
+      "group": "仿真",
+      "name": "预设工况数量 ≥ 11",
+      "pass": true,
+      "detail": "",
+      "expect": "≥11",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "仿真",
+      "name": "全部工况可生成有效帧+真值",
+      "pass": true,
+      "detail": "11 个工况均出帧",
+      "expect": "无异常",
+      "elapsed_ms": 894.06
+    },
+    {
+      "group": "仿真",
+      "name": "随机种子可复现",
+      "pass": true,
+      "detail": "truth={'offset_x': 0.0, 'offset_y': 0.0, 'angle_deg': 0.0, 'center_x': 640.0, 'center_y': 360.0, 'frame_index': 0}",
+      "expect": "帧/真值完全一致",
+      "elapsed_ms": 93.49
+    },
+    {
+      "group": "仿真",
+      "name": "真值参数回读准确",
+      "pass": true,
+      "detail": "角度/位移真值误差 < 容差",
+      "expect": "偏差 < 1.5px / 0.6°",
+      "elapsed_ms": 46.18
+    },
+    {
+      "group": "仿真",
+      "name": "极小分辨率不崩溃",
+      "pass": true,
+      "detail": "小分辨率可用",
+      "expect": "正常出帧",
+      "elapsed_ms": 1.52
+    },
+    {
+      "group": "引擎",
+      "name": "理想检测器→检出率100%",
+      "pass": true,
+      "detail": "total=5 检出率=100%",
+      "expect": "detection_rate=1.0",
+      "elapsed_ms": 237.27
+    },
+    {
+      "group": "引擎",
+      "name": "失效检测器→漏检计数正确",
+      "pass": true,
+      "detail": "漏检 5/5",
+      "expect": "detected=0",
+      "elapsed_ms": 239.73
+    },
+    {
+      "group": "引擎",
+      "name": "算法异常被吞并记录",
+      "pass": true,
+      "detail": "异常被捕获并记录 note",
+      "expect": "不抛出",
+      "elapsed_ms": 147.15
+    },
+    {
+      "group": "引擎",
+      "name": "run_all 覆盖全部工况",
+      "pass": true,
+      "detail": "11 工况 × 2 = 22 用例",
+      "expect": "全工况执行",
+      "elapsed_ms": 1184.32
+    },
+    {
+      "group": "引擎",
+      "name": "未知工况名安全返回",
+      "pass": true,
+      "detail": "返回空列表",
+      "expect": "[]",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "引擎",
+      "name": "统计字段完整",
+      "pass": true,
+      "detail": "字段齐全(20项)",
+      "expect": "含 pass_rate 等",
+      "elapsed_ms": 275.84
+    },
+    {
+      "group": "引擎",
+      "name": "空结果统计不崩溃",
+      "pass": true,
+      "detail": "空数据返回 total=0",
+      "expect": "total=0",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "引擎",
+      "name": "同种子批量结果可复现",
+      "pass": true,
+      "detail": "6 例两次运行真值一致，角度跨度 -0.79°",
+      "expect": "两次真值一致",
+      "elapsed_ms": 796.03
+    },
+    {
+      "group": "直线",
+      "name": "多算法融合可检出直线",
+      "pass": true,
+      "detail": "检出 23 条",
+      "expect": ">0 条",
+      "elapsed_ms": 16.24
+    },
+    {
+      "group": "直线",
+      "name": "极小 ROI 安全",
+      "pass": true,
+      "detail": "小 ROI 返回 0 条",
+      "expect": "list",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "直线",
+      "name": "非法 ROI 返回空",
+      "pass": true,
+      "detail": "倒置/零面积 ROI 返回 []",
+      "expect": "[]",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "直线",
+      "name": "灰度图输入兼容",
+      "pass": true,
+      "detail": "灰度输入检出 23 条",
+      "expect": "list",
+      "elapsed_ms": 16.36
+    },
+    {
+      "group": "直线",
+      "name": "直线角度解析精度",
+      "pass": true,
+      "detail": "0°/90°/45° 解析正确",
+      "expect": "误差<1e-6",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "直线",
+      "name": "无向角度差归一化",
+      "pass": true,
+      "detail": "±180° 跳变处理正确",
+      "expect": "≤90°",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "直线",
+      "name": "交点解析正确",
+      "pass": true,
+      "detail": "交点=(50.0, 0.0)",
+      "expect": "(50,0)",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "直线",
+      "name": "平行线交点安全",
+      "pass": true,
+      "detail": "平行线返回 None",
+      "expect": "None",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "直线",
+      "name": "两线距离计算",
+      "pass": true,
+      "detail": "平行线距=30.00px",
+      "expect": "≈30px",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "直线",
+      "name": "共线直线合并有效",
+      "pass": true,
+      "detail": "23 → 4 条",
+      "expect": "数量不增加",
+      "elapsed_ms": 17.2
+    },
+    {
+      "group": "直线",
+      "name": "算法清单完整",
+      "pass": true,
+      "detail": "5 种算法",
+      "expect": "≥5",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "轮廓",
+      "name": "多算法融合检出轮廓",
+      "pass": true,
+      "detail": "检出 2 个轮廓",
+      "expect": ">0",
+      "elapsed_ms": 2.65
+    },
+    {
+      "group": "轮廓",
+      "name": "有效面积解析正确",
+      "pass": true,
+      "detail": "正方形面积=100.0",
+      "expect": "100",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "轮廓",
+      "name": "轮廓中心计算",
+      "pass": true,
+      "detail": "中心=(5, 5)",
+      "expect": "(5,5)",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "轮廓",
+      "name": "自匹配分数≈1",
+      "pass": true,
+      "detail": "自匹配=1.000",
+      "expect": ">0.9",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "轮廓",
+      "name": "同轮廓偏差为 0",
+      "pass": true,
+      "detail": "零偏差字段正常(5项)",
+      "expect": "≈0",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "轮廓",
+      "name": "位置匹配偏移正确",
+      "pass": true,
+      "detail": "偏移=(100, 100) score=0.78",
+      "expect": "≈(100,100)",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "轮廓",
+      "name": "空模板/空候选安全",
+      "pass": true,
+      "detail": "空输入返回 None",
+      "expect": "None",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "轮廓",
+      "name": "非法 ROI 返回空",
+      "pass": true,
+      "detail": "零面积 ROI 返回 []",
+      "expect": "[]",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "标定",
+      "name": "点对应求像素/毫米比例",
+      "pass": true,
+      "detail": "比例 x=10.0/mm, y=5.0/mm",
+      "expect": "x=10 y=5",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "标定",
+      "name": "标定点不足报错",
+      "pass": true,
+      "detail": "正确抛出 ValueError",
+      "expect": "ValueError",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "标定",
+      "name": "标定数据存取往返",
+      "pass": true,
+      "detail": "往返一致",
+      "expect": "字段一致",
+      "elapsed_ms": 5.08
+    },
+    {
+      "group": "标定",
+      "name": "像素→毫米换算",
+      "pass": true,
+      "detail": "250px→25.0mm",
+      "expect": "25/50 mm",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "标定",
+      "name": "未标定畸变校正不崩",
+      "pass": true,
+      "detail": "未标定时安全返回",
+      "expect": "同形状",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "模板",
+      "name": "双直线模板存取往返",
+      "pass": true,
+      "detail": "4 线 + 2 ROI 往返一致",
+      "expect": "字段一致",
+      "elapsed_ms": 8.27
+    },
+    {
+      "group": "模板",
+      "name": "轮廓模板存取往返",
+      "pass": true,
+      "detail": "轮廓+参数往返一致",
+      "expect": "字段一致",
+      "elapsed_ms": 6.44
+    },
+    {
+      "group": "模板",
+      "name": "缺失模板文件安全",
+      "pass": true,
+      "detail": "缺失文件安全返回",
+      "expect": "不抛出",
+      "elapsed_ms": 0.67
+    },
+    {
+      "group": "模板",
+      "name": "项目实际模板文件可加载",
+      "pass": true,
+      "detail": "line:complete=True; shape:has_contours=True",
+      "expect": "可解析",
+      "elapsed_ms": 2.1
+    },
+    {
+      "group": "坐标",
+      "name": "像素→毫米管线",
+      "pass": true,
+      "detail": "300px→30.0mm / 450px→45.0mm",
+      "expect": "30/45 mm",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "坐标",
+      "name": "偏置补偿生效",
+      "pass": true,
+      "detail": "补偿后 x=25.0, y=48.0",
+      "expect": "25/48",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "坐标",
+      "name": "机械手 CSV 协议 6 字段",
+      "pass": true,
+      "detail": "10.000,20.000,0.000,1.500,1,0.880",
+      "expect": "6 字段",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "坐标",
+      "name": "机械手 TCP 报文生成",
+      "pass": true,
+      "detail": "tcp 报文 44 字符",
+      "expect": "非空",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "坐标",
+      "name": "mm 空间评估汇总",
+      "pass": true,
+      "detail": "mean=0.0361mm acc=100.0%",
+      "expect": "均值≈0.036",
+      "elapsed_ms": 15.46
+    },
+    {
+      "group": "坐标",
+      "name": "mm 评估空样本安全",
+      "pass": true,
+      "detail": "空样本返回 error 标记",
+      "expect": "不抛异常",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "机械手",
+      "name": "抓取成功率统计",
+      "pass": true,
+      "detail": "100/100 全部抓取成功",
+      "expect": "100%",
+      "elapsed_ms": 1.11
+    },
+    {
+      "group": "机械手",
+      "name": "零抓取判定不合格",
+      "pass": true,
+      "detail": "0% 并判不合格",
+      "expect": "0% 不合格",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "机械手",
+      "name": "状态分组与 Excel 列对齐",
+      "pass": true,
+      "detail": "4 状态 × 5 次，Excel 10 列",
+      "expect": "10 列",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "机械手",
+      "name": "串口与 Modbus 协议打包",
+      "pass": true,
+      "detail": "serial ok / modbus 32B",
+      "expect": "格式正确",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "上胶",
+      "name": "满涂覆盖率高且合格",
+      "pass": true,
+      "detail": "5 区, 平均覆盖率 100.0% → 合格",
+      "expect": ">95% 合格",
+      "elapsed_ms": 4.52
+    },
+    {
+      "group": "上胶",
+      "name": "局部漏涂可识别",
+      "pass": true,
+      "detail": "左区 100.0% vs 右区 0.0% → 不合格",
+      "expect": "不合格",
+      "elapsed_ms": 3.01
+    },
+    {
+      "group": "上胶",
+      "name": "自动裁切失败时回退整幅",
+      "pass": true,
+      "detail": "auto_crop 回退整幅，平均覆盖率 90.0%",
+      "expect": ">70%",
+      "elapsed_ms": 2.53
+    },
+    {
+      "group": "上胶",
+      "name": "批量统计汇总",
+      "pass": true,
+      "detail": "3 件 合格率 100.0%",
+      "expect": "字段完整",
+      "elapsed_ms": 6.03
+    },
+    {
+      "group": "上胶",
+      "name": "空批统计安全",
+      "pass": true,
+      "detail": "空列表返回空字典",
+      "expect": "{}",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "包边",
+      "name": "3 点测量输出",
+      "pass": true,
+      "detail": "3 点均值 49.7487mm",
+      "expect": "3 点",
+      "elapsed_ms": 17.31
+    },
+    {
+      "group": "包边",
+      "name": "容差判定逻辑",
+      "pass": true,
+      "detail": "偏差 0.0mm → 合格",
+      "expect": "合格",
+      "elapsed_ms": 1.01
+    },
+    {
+      "group": "包边",
+      "name": "Excel 行对齐 11 列",
+      "pass": true,
+      "detail": "3 行 × 11 列",
+      "expect": "11 列",
+      "elapsed_ms": 2.51
+    },
+    {
+      "group": "包边",
+      "name": "空批统计安全",
+      "pass": true,
+      "detail": "空列表返回空字典",
+      "expect": "{}",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "验收表",
+      "name": "一键生成 4 张验收表",
+      "pass": true,
+      "detail": "4 张表, 共 30 KB",
+      "expect": "4 文件",
+      "elapsed_ms": 1389.76
+    },
+    {
+      "group": "验收表",
+      "name": "表结构与实体机列数一致",
+      "pass": true,
+      "detail": "4 张表列数与数据行均达标",
+      "expect": "列数/行数达标",
+      "elapsed_ms": 69.66
+    },
+    {
+      "group": "验收表",
+      "name": "结论与记录信息齐备",
+      "pass": true,
+      "detail": "4 张表均含结论/考核指标/记录信息",
+      "expect": "关键字齐全",
+      "elapsed_ms": 46.12
+    },
+    {
+      "group": "验收表",
+      "name": "清理临时目录",
+      "pass": true,
+      "detail": "已清理临时输出",
+      "expect": "已清理",
+      "elapsed_ms": 12.49
+    },
+    {
+      "group": "端到端",
+      "name": "仿真→真实算法→误差链路",
+      "pass": true,
+      "detail": "6 例 检出率 100% 平均误差 10.1px",
+      "expect": "检出率≥90% 误差<60px",
+      "elapsed_ms": 748.04
+    },
+    {
+      "group": "性能",
+      "name": "各工况单帧耗时可控",
+      "pass": true,
+      "detail": "平均 42.9ms/帧，最慢 噪声干扰工况 95ms，最快 35.2ms",
+      "expect": "最慢 < 2000ms",
+      "elapsed_ms": 3168.91
+    },
+    {
+      "group": "性能",
+      "name": "基准工况吞吐量",
+      "pass": true,
+      "detail": "38.9ms/帧 ≈ 25.7 FPS（中位数）",
+      "expect": "报告 FPS",
+      "elapsed_ms": 494.13
+    },
+    {
+      "group": "性能",
+      "name": "ROI 缩小可降耗时",
+      "pass": true,
+      "detail": "全幅 34.0ms → 半幅 17.8ms",
+      "expect": "半幅更快",
+      "elapsed_ms": 422.72
+    },
+    {
+      "group": "集成",
+      "name": "GUI 主模块可导入",
+      "pass": true,
+      "detail": "vision_gui_v3 导入成功，导出符号 86 个",
+      "expect": "无导入错误",
+      "elapsed_ms": 42.76
+    },
+    {
+      "group": "集成",
+      "name": "主窗口检测回调存在",
+      "pass": true,
+      "detail": "MainWindow._run_detection_on_frame 就绪",
+      "expect": "存在",
+      "elapsed_ms": 0.0
+    },
+    {
+      "group": "集成",
+      "name": "Web 控制台可导入",
+      "pass": true,
+      "detail": "web_sim_server 路由就绪",
+      "expect": "app/路由存在",
+      "elapsed_ms": 666.86
+    },
+    {
+      "group": "集成",
+      "name": "Web 页面与状态接口可用",
+      "pass": true,
+      "detail": "首页 11KB，/api/status 8 字段",
+      "expect": "200 + 字段齐全",
+      "elapsed_ms": 53.0
+    },
+    {
+      "group": "集成",
+      "name": "自动化测试脚本可导入",
+      "pass": true,
+      "detail": "playwright_sim_test 导入成功(23 符号)",
+      "expect": "无导入错误",
+      "elapsed_ms": 340.59
+    },
+    {
+      "group": "集成",
+      "name": "系统配置文件有效",
+      "pass": true,
+      "detail": "配置键 13 项",
+      "expect": "可解析",
+      "elapsed_ms": 1.07
+    }
+  ]
+}

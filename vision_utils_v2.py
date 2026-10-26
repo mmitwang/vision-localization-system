@@ -300,19 +300,39 @@ class CameraCalibration:
         calib_data = CalibrationData()
         
         # 计算像素/毫米比例
-        px_list = np.array(pixel_points)
-        phys_list = np.array(physical_points)
+        px_list = np.array(pixel_points, dtype=float)
+        phys_list = np.array(physical_points, dtype=float)
         
-        if len(px_list) >= 2:
-            dx_pix = abs(px_list[1][0] - px_list[0][0])
-            dx_phys = abs(phys_list[1][0] - phys_list[0][0])
-            if dx_phys > 0:
-                calib_data.pixel_per_mm_x = dx_pix / dx_phys
-                
-            dy_pix = abs(px_list[1][1] - px_list[0][1])
-            dy_phys = abs(phys_list[1][1] - phys_list[0][1])
-            if dy_phys > 0:
-                calib_data.pixel_per_mm_y = dy_pix / dy_phys
+        # 逐轴比例：遍历所有点对，取"该轴物理跨度最大"的点对做估计，
+        # 避免仅用前两个点时（点对同轴排列）另一轴跨度为 0 导致比例退化为默认值
+        def _axis_ratio(axis: int) -> Optional[float]:
+            best_span = 0.0
+            best_ratio = None
+            n = len(px_list)
+            for i in range(n):
+                for j in range(i + 1, n):
+                    d_phys = abs(phys_list[j][axis] - phys_list[i][axis])
+                    if d_phys <= 1e-9:
+                        continue
+                    d_pix = abs(px_list[j][axis] - px_list[i][axis])
+                    ratio = d_pix / d_phys
+                    if d_phys > best_span:
+                        best_span = d_phys
+                        best_ratio = ratio
+            return best_ratio
+        
+        rx = _axis_ratio(0)
+        ry = _axis_ratio(1)
+        if rx is not None:
+            calib_data.pixel_per_mm_x = rx
+        if ry is not None:
+            calib_data.pixel_per_mm_y = ry
+        # 若某轴无法估计（所有点在该轴无跨度），退化为另一轴比例，
+        # 避免出现 1:1 默认值造成的量纲错误
+        if rx is None and ry is not None:
+            calib_data.pixel_per_mm_x = ry
+        if ry is None and rx is not None:
+            calib_data.pixel_per_mm_y = rx
         
         calib_data.points_pixel = pixel_points
         calib_data.points_physical = physical_points
@@ -427,8 +447,8 @@ class VisionAlgorithm:
                           threshold=50) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """Sobel边缘检测"""
         lines = []
-        sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
-        sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+        sobelx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+        sobely = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
         sobel_edges = cv2.magnitude(sobelx, sobely)
         sobel_edges = cv2.normalize(sobel_edges, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
         _, sobel_binary = cv2.threshold(sobel_edges, threshold, 255, cv2.THRESH_BINARY)
@@ -446,8 +466,8 @@ class VisionAlgorithm:
                            threshold=40) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """Scharr边缘检测（更精确）"""
         lines = []
-        scharrx = cv2.Scharr(gray, cv2.CV_64F, 1, 0)
-        scharry = cv2.Scharr(gray, cv2.CV_64F, 0, 1)
+        scharrx = cv2.Scharr(gray, cv2.CV_32F, 1, 0)
+        scharry = cv2.Scharr(gray, cv2.CV_32F, 0, 1)
         scharr_edges = cv2.magnitude(scharrx, scharry)
         scharr_edges = cv2.normalize(scharr_edges, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
         _, scharr_binary = cv2.threshold(scharr_edges, threshold, 255, cv2.THRESH_BINARY)
@@ -913,8 +933,8 @@ class VisionAlgorithm:
                             all_lines.append(((px1+x1, py1+y1), (px2+x1, py2+y1), length))
             
             # 算法3: Sobel边缘检测
-            sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
-            sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+            sobelx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+            sobely = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
             sobel_edges = cv2.magnitude(sobelx, sobely)
             sobel_edges = cv2.normalize(sobel_edges, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
             _, sobel_binary = cv2.threshold(sobel_edges, 50, 255, cv2.THRESH_BINARY)
@@ -930,8 +950,8 @@ class VisionAlgorithm:
                             all_lines.append(((px1+x1, py1+y1), (px2+x1, py2+y1), length))
             
             # 算法4: Scharr边缘检测（更精确）
-            scharrx = cv2.Scharr(gray, cv2.CV_64F, 1, 0)
-            scharry = cv2.Scharr(gray, cv2.CV_64F, 0, 1)
+            scharrx = cv2.Scharr(gray, cv2.CV_32F, 1, 0)
+            scharry = cv2.Scharr(gray, cv2.CV_32F, 0, 1)
             scharr_edges = cv2.magnitude(scharrx, scharry)
             scharr_edges = cv2.normalize(scharr_edges, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
             _, scharr_binary = cv2.threshold(scharr_edges, 40, 255, cv2.THRESH_BINARY)
@@ -1514,11 +1534,15 @@ class TemplateManager:
             
             return template
             
+        except FileNotFoundError:
+            # 文件缺失属于可预期情况（尚未保存模板），返回 None 由调用方提示
+            print(f"load_dual_line_template: 文件不存在 {filename}")
+            return None
         except Exception as e:
             print(f"load_dual_line_template error: {e}")
             import traceback
             traceback.print_exc()
-            raise
+            return None
     
     @staticmethod
     def save_shape_template(filename: str, template: ShapeTemplate, params: Dict[str, Any] = None):
@@ -1570,11 +1594,14 @@ class TemplateManager:
             
             return template, data.get('params', {})
             
+        except FileNotFoundError:
+            print(f"load_shape_template: 文件不存在 {filename}")
+            return None, {}
         except Exception as e:
             print(f"load_shape_template error: {e}")
             import traceback
             traceback.print_exc()
-            raise
+            return None, {}
     
     @staticmethod
     def save_calibration(filename: str, calib_data: CalibrationData):
@@ -1597,8 +1624,15 @@ class TemplateManager:
     @staticmethod
     def load_calibration(filename: str) -> CalibrationData:
         """加载标定数据"""
-        with open(filename, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            print(f"load_calibration: 文件不存在 {filename}")
+            return None
+        except Exception as e:
+            print(f"load_calibration error: {e}")
+            return None
         
         calib_data = CalibrationData()
         calib_data.camera_matrix = np.array(data['camera_matrix'])

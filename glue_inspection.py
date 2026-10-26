@@ -60,26 +60,45 @@ class GlueUniformityInspector:
 
     def __init__(self, min_coverage_pct: float = 95.0,
                  glue_color_hsv_range: Tuple[Tuple[int, int, int], Tuple[int, int, int]] =
-                     ((80, 50, 50), (130, 255, 255))):
+                     ((80, 50, 50), (130, 255, 255)),
+                 min_area_ratio: float = 0.25,
+                 auto_crop: bool = False):
         # 胶液颜色范围（默认蓝紫色，可按实际胶液调整 HSV）
-        self.hsv_lo = glue_color_hsv_range[0]
-        self.hsv_hi = glue_color_hsv_range[1]
+        self.hsv_lo = tuple(int(v) for v in glue_color_hsv_range[0])
+        self.hsv_hi = tuple(int(v) for v in glue_color_hsv_range[1])
         self.min_coverage = min_coverage_pct
+        # 自动裁切的最小有效面积占比（低于则视为裁切失败，回退整幅）
+        self.min_area_ratio = min_area_ratio
+        # 默认不自动裁切：涂胶后面纸亮度可能低于背景，亮度启发式裁切不可靠。
+        # 5 区划分本身按整幅横向均分，与实体机"沿面纸横向等分"口径一致；
+        # 需要精确限定面纸范围时应由调用方传入 sheet_mask。
+        self.auto_crop = auto_crop
 
     def _extract_sheet(self, image: np.ndarray,
                        mask: Optional[np.ndarray] = None) -> np.ndarray:
-        """提取面纸区域（自动或 mask）"""
+        """
+        提取面纸区域（显式 mask 优先，其次自动裁切）
+
+        注意：涂胶后纸面灰度会下降（可能低于背景），单纯按"最亮区域"
+        裁切会把背景窄条误判为面纸而丢掉整幅胶面。因此自动裁切必须做
+        合理性校验：裁切框面积占全图比例不足 min_area_ratio 时，
+        视为裁切失败，回退到整幅图像（由 5 区划分自行覆盖）。
+        """
         if mask is not None:
-            masked = cv2.bitwise_and(image, image, mask=mask)
-            return masked
-        # 自动提取：找最大白色/浅色矩形轮廓
+            return cv2.bitwise_and(image, image, mask=mask)
+        if not self.auto_crop:
+            return image
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         _, binary = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
-        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL,
+                                       cv2.CHAIN_APPROX_SIMPLE)
         if not contours:
             return image
         largest = max(contours, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(largest)
+        total = float(image.shape[0] * image.shape[1])
+        if total <= 0 or (w * h) / total < self.min_area_ratio:
+            return image
         return image[y:y + h, x:x + w]
 
     def inspect(self, image: np.ndarray, sheet_mask: np.ndarray = None,
