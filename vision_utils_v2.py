@@ -1630,3 +1630,169 @@ class CameraUtils:
                 cameras.append((i, w, h))
                 cap.release()
         return cameras
+
+
+# =====================================================================
+# 坐标空间 mm 化管线 + 机械手坐标输出（2026-10-26 浩达验收补全）
+# 对齐实体封面机 ZFM-500B 口径：输出单位 mm、估读精度 ±0.001mm
+# =====================================================================
+
+@dataclass
+class RobotPose:
+    """机械手可直接消费的坐标姿态（对齐浩达 ZFM-500B 机械手接口）"""
+    x_mm: float = 0.0
+    y_mm: float = 0.0
+    z_mm: float = 0.0
+    a_deg: float = 0.0          # 绕Z轴角度（度）
+    timestamp_ms: float = 0.0
+    valid: bool = False
+    score: float = 0.0
+
+    def to_list(self):
+        return [round(self.x_mm, 3), round(self.y_mm, 3),
+                round(self.z_mm, 3), round(self.a_deg, 3),
+                self.valid, round(self.score, 3)]
+
+    def to_protocol_string(self, proto: str = "csv") -> str:
+        """生成机械手协议字符串（逗号分隔，最后一行带换行）"""
+        if proto == "csv":
+            return f"{self.x_mm:.3f},{self.y_mm:.3f},{self.z_mm:.3f},{self.a_deg:.3f},{int(self.valid)},{self.score:.3f}\n"
+        elif proto == "tcp":
+            # 简单 Modbus/TCP 风格寄存器打包（占位格式：0x55 帧头 + 6个float + 0xAA 帧尾）
+            import struct
+            header = bytes([0x55])
+            payload = struct.pack("<4f1f", self.x_mm, self.y_mm, self.z_mm, self.a_deg, self.score)
+            footer = bytes([0xAA])
+            return (header + payload + footer).hex() + "\n"
+        return self.to_list()
+
+
+class CoordinatePipeline:
+    """
+    像素 → mm 坐标空间转换管线 + 机械手输出接口
+    
+    实体机对齐口径：
+    - 视觉输出坐标 → 机械手纠偏参考（坐标偏差平均 0.085mm / 最大 0.112mm）
+    - 坐标系：世界坐标 mm，估读精度 ±0.001mm
+    - 支持 offset 补偿（装配偏差、工装基准偏移）
+    
+    用法：
+        cp = CoordinatePipeline(calib_data, offsets=(0,0,0,0))
+        result_mm = cp.pixel_to_mm(detection_result)
+        robot_pose = cp.to_robot_pose(result_mm)
+        tcp_string = cp.to_tcp_stream(robot_pose)
+    """
+
+    def __init__(self, calib_data: CalibrationData,
+                 offsets: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0),
+                 default_z_mm: float = 0.0):
+        self.calib = calib_data
+        self.off_x, self.off_y, self.off_z, self.off_a = offsets
+        self.default_z = default_z_mm
+        # 未标定时提供默认 10px/mm 的仿真换算（仅测试用，实际必须标定）
+        self.px_per_mm_x = calib_data.pixel_per_mm_x if calib_data.is_calibrated and calib_data.pixel_per_mm_x > 0 else 10.0
+        self.px_per_mm_y = calib_data.pixel_per_mm_y if calib_data.is_calibrated and calib_data.pixel_per_mm_y > 0 else 10.0
+
+    def pixel_to_mm(self, px: float, axis: str = "x") -> float:
+        """像素 → mm 单轴"""
+        if axis.lower() == "x":
+            return px / self.px_per_mm_x - self.off_x
+        else:
+            return px / self.px_per_mm_y - self.off_y
+
+    def detection_to_mm(self, det: DetectionResult) -> DetectionResult:
+        """DetectionResult 从像素空间完整转换到 mm 空间"""
+        det.x_mm = self.pixel_to_mm(det.x_pixel, "x")
+        det.y_mm = self.pixel_to_mm(det.y_pixel, "y")
+        det.z_mm = self.default_z - self.off_z
+        # 角度一般在像素空间已解算好，仅保留。a_offset 用于机械臂零位补偿
+        return det
+
+    def to_robot_pose(self, det: DetectionResult) -> RobotPose:
+        """从检测结果生成机械手 ready 的坐标姿态"""
+        det = self.detection_to_mm(det)
+        return RobotPose(
+            x_mm=det.x_mm, y_mm=det.y_mm, z_mm=det.z_mm,
+            a_deg=det.angle - self.off_a,
+            timestamp_ms=det.timestamp,
+            valid=det.valid, score=det.score
+        )
+
+    def robot_pose_to_protocol(self, pose: RobotPose, proto: str = "csv") -> str:
+        return pose.to_protocol_string(proto)
+
+
+class MMSpaceEvaluator:
+    """
+    mm 空间误差评估器（对齐实体封面机验收口径）
+    
+    实体机指标：
+    - 视觉坐标偏差：平均 0.085mm / 最大 0.112mm（供机械手纠偏参考）
+    - 考核线：识别准确率 ≥99.5%、抓取成功率 ≥99.8%、定位误差 ≤0.1mm
+    
+    用法：
+        evaluator = MMSpaceEvaluator(tolerance_mm=0.1)
+        evaluator.feed_batch(batch_predictions_mm, batch_ground_truth_mm)
+        report = evaluator.summary()  # 返回对齐实体机口径的统计 dict
+    """
+
+    def __init__(self, tolerance_mm: float = 0.1,
+                 accuracy_threshold: float = 0.995,
+                 angular_tolerance_deg: float = 0.5):
+        self.tol_mm = tolerance_mm
+        self.acc_threshold = accuracy_threshold
+        self.ang_tol = angular_tolerance_deg
+        self.errors_mm: List[float] = []
+        self.angle_errors_deg: List[float] = []
+        self.detection_results: List[bool] = []      # True=成功检测
+        self.timestamp_samples: List[float] = []
+
+    def feed(self, pred_xy: Tuple[float, float], gt_xy: Tuple[float, float],
+             angle_pred: float = 0.0, angle_gt: float = 0.0,
+             detected: bool = True, timestamp: float = 0.0):
+        dx = pred_xy[0] - gt_xy[0]
+        dy = pred_xy[1] - gt_xy[1]
+        dist = math.sqrt(dx * dx + dy * dy)
+        self.errors_mm.append(dist)
+        self.angle_errors_deg.append(abs(angle_pred - angle_gt))
+        self.detection_results.append(detected)
+        if timestamp:
+            self.timestamp_samples.append(timestamp)
+
+    def feed_batch(self, preds, gts, angles=None, angles_gt=None,
+                   detected_flags=None, timestamps=None):
+        for i in range(len(preds)):
+            angle_p = angles[i] if angles else 0.0
+            angle_g = angles_gt[i] if angles_gt else 0.0
+            det = detected_flags[i] if detected_flags else True
+            ts = timestamps[i] if timestamps else 0.0
+            self.feed(preds[i], gts[i], angle_p, angle_g, det, ts)
+
+    def summary(self) -> Dict[str, Any]:
+        n = len(self.errors_mm)
+        if n == 0:
+            return {"error": "no samples"}
+        import statistics as st
+        mean_err = st.mean(self.errors_mm)
+        max_err = max(self.errors_mm)
+        mean_ang_err = st.mean(self.angle_errors_deg) if self.angle_errors_deg else 0.0
+        acc = sum(self.detection_results) / n
+        # 坐标定位精度 ≤ tol_mm 的样本占比（对齐实体机定位误差≤0.1mm 口径）
+        pos_pass = sum(1 for e in self.errors_mm if e <= self.tol_mm) / n
+        ang_pass = sum(1 for e in self.angle_errors_deg if e <= self.ang_tol) / n if self.angle_errors_deg else 1.0
+        overall_pass = (acc >= self.acc_threshold) and (pos_pass >= 0.998) and (ang_pass >= 0.99)
+
+        return {
+            "sample_count": n,
+            "accuracy": round(acc * 100, 2),                     # 识别准确率 %
+            "accuracy_threshold": self.acc_threshold * 100,
+            "mean_position_error_mm": round(mean_err, 4),        # 平均坐标偏差 mm
+            "max_position_error_mm": round(max_err, 4),          # 最大坐标偏差 mm
+            "position_tolerance_mm": self.tol_mm,
+            "position_pass_rate_pct": round(pos_pass * 100, 2),  # 定位误差≤tol 的占比
+            "mean_angle_error_deg": round(mean_ang_err, 4),
+            "angle_pass_rate_pct": round(ang_pass * 100, 2),
+            "overall_pass": overall_pass,
+            "unit": "mm / deg",
+            "caliber": "浩达 ZFM-500B 验收口径对齐",
+        }
