@@ -1,0 +1,15 @@
+{
+  "offset_x": 0.0,
+  "offset_y": 0.0,
+  "offset_z": 0.0,
+  "offset_a": 0.0,
+  "score_threshold": 0.7,
+  "alarm_x": 5.0,
+  "alarm_y": 5.0,
+  "alarm_a": 3.0,
+  "timeout": 3000,
+  "photo_delay": 100,
+  "vacuum_delay": 200,
+  "retry_count": 3,
+  "fail_mode": "报警停止"
+}

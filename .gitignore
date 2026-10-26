@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 临时与缓存
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# 运行时输出（可重新生成，不入库）
+_pg*.png
+_report_preview.pdf
+_gen_*.py
+_pdf_png.py
